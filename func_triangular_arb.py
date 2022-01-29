@@ -104,3 +104,85 @@ def structure_trading_pairs(pairs, limit=200):
                                     remove_duplicate_list.append(unique_string)
 
     return triangular_pairs_list
+
+
+# Calculate surface arb potential
+def calc_triangular_arbs_surface_rate(t_pair):
+    # Set variables
+    min_surface_rate = 1.5
+    surface_dict = {}
+    pool_contract_2 = ""
+    pool_contract_3 = ""
+    pool_direction_trade_1 = ""
+    pool_direction_trade_2 = ""
+    pool_direction_trade_3 = ""
+
+    # Calculate forward and reverse rates
+    direction_list = ["forward", "reverse"]
+
+    for direction in direction_list:
+        # SEt pair info
+        a_base = t_pair["a_base"]
+        a_quote = t_pair["a_quote"]
+        b_base = t_pair["b_base"]
+        b_quote = t_pair["c_quote"]
+        c_base = t_pair["c_base"]
+        c_quote = t_pair["c_quote"]
+
+        # Set price info
+        a_token0_price = float(t_pair["a_token0_price"])
+        a_token1_price = float(t_pair["a_token1_price"])
+        b_token0_price = float(t_pair["b_token0_price"])
+        b_token1_price = float(t_pair["b_token1_price"])
+        c_token0_price = float(t_pair["c_token0_price"])
+        c_token1_price = float(t_pair["c_token1_price"])
+
+        # Set address info
+        a_contract = t_pair["a_contract"]
+        b_contract = t_pair["b_contract"]
+        c_contract = t_pair["c_contract"]
+
+        # Set variables
+        starting_amount = 1
+        acquired_coin_t2 = 0
+        acquired_coin_t3 = 0
+        calculated = 0
+
+        swap_1 = 0
+        swap_2 = 0
+        swap_3 = 0
+        swap_1_rate = 0
+        swap_2_rate = 0
+        swap_3_rate = 0
+
+        # Assume starting with a_base is forward
+        if direction == "forward":
+            swap_1 = a_base
+            swap_2 = a_quote
+            swap_1_rate = a_token1_price
+            pool_direction_trade_1 = "base_to_quote"
+
+        # Assume start with a_quote if reverse
+        if direction == "reverse":
+            swap_1 = a_quote
+            swap_2 = a_base
+            swap_1_rate = a_token0_price
+            pool_direction_trade_1 = "quote_to_base"
+
+        # Place first trade
+        pool_conract_1 = a_contract
+        acquired_coin_t1 = starting_amount * swap_1_rate
+
+        # Forward: check if a_quote (acquired coin) matches b_quote
+        if direction == "forward":
+            if a_quote == b_quote and calculated == 0:
+                swap_2_rate = b_token0_price
+                acquired_coin_t2 = acquired_coin_t1 * swap_2_rate
+                pool_direction_trade_2 = "quote_to_base"
+                pool_contract_2 = b_contract
+
+                # Forward: check if b_base (acquired coin) matches c_base
+                if b_base == c_base:
+                    swap_3 == c_base
+                    swap_3_rate = c_token1_price
+                    pool_direction_trade_3 = "base_to_quote"
