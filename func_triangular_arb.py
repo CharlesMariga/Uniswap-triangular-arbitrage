@@ -107,10 +107,9 @@ def structure_trading_pairs(pairs, limit=200):
 
 
 # Calculate surface arb potential
-def calc_triangular_arbs_surface_rate(t_pair):
+def calc_triangular_arbs_surface_rate(t_pair, min_rate):
     # Set variables
-    min_surface_rate = 1.5
-    surface_dict = {}
+    min_surface_rate = min_rate
     pool_contract_2 = ""
     pool_contract_3 = ""
     pool_direction_trade_1 = ""
@@ -121,7 +120,7 @@ def calc_triangular_arbs_surface_rate(t_pair):
     direction_list = ["forward", "reverse"]
 
     for direction in direction_list:
-        # SEt pair info
+        # Set pair info
         a_base = t_pair["a_base"]
         a_quote = t_pair["a_quote"]
         b_base = t_pair["b_base"]
@@ -155,7 +154,7 @@ def calc_triangular_arbs_surface_rate(t_pair):
         swap_2_rate = 0
         swap_3_rate = 0
 
-        # Assume starting with a_base is forward
+        # Assume starting with a_base if forward
         if direction == "forward":
             swap_1 = a_base
             swap_2 = a_quote
@@ -170,11 +169,11 @@ def calc_triangular_arbs_surface_rate(t_pair):
             pool_direction_trade_1 = "quote_to_base"
 
         # Place first trade
-        pool_conract_1 = a_contract
+        pool_contract_1 = a_contract
         acquired_coin_t1 = starting_amount * swap_1_rate
 
-        # Forward: check if a_quote (acquired coin) matches b_quote
         if direction == "forward":
+            # Forward: check if a_quote (acquired coin) matches b_quote
             if a_quote == b_quote and calculated == 0:
                 swap_2_rate = b_token0_price
                 acquired_coin_t2 = acquired_coin_t1 * swap_2_rate
@@ -186,3 +185,221 @@ def calc_triangular_arbs_surface_rate(t_pair):
                     swap_3 == c_base
                     swap_3_rate = c_token1_price
                     pool_direction_trade_3 = "base_to_quote"
+                    pool_contract_3 = c_contract
+
+                # Forward: check if b_base (acquired coin) matches c_quote
+                elif b_base == c_quote:
+                    swap_3 == c_quote
+                    swap_3_rate = c_token0_price
+                    pool_direction_trade_3 = "quote_to_base"
+                    pool_contract_3 = c_contract
+
+                acquired_coin_t3 = acquired_coin_t2 * swap_3_rate
+                calculated = 1
+
+            # Forward: check if a_quote (acquired coin) matches b_base
+            elif a_quote == b_base and calculated == 0:
+                swap_2_rate = b_token1_price
+                acquired_coin_t2 = acquired_coin_t1 * swap_2_rate
+                pool_direction_trade_2 = "base_to_quote"
+                pool_contract_2 = b_contract
+
+                # Forward: check if b_base (acquired coin) matches c_base
+                if b_quote == c_base:
+                    swap_3 == c_base
+                    swap_3_rate = c_token1_price
+                    pool_direction_trade_3 = "base_to_quote"
+                    pool_contract_3 = c_contract
+
+                # Forward: check if b_base (acquired coin) matches c_quote
+                elif b_quote == c_quote:
+                    swap_3 == c_quote
+                    swap_3_rate = c_token0_price
+                    pool_direction_trade_3 = "quote_to_base"
+                    pool_contract_3 = c_contract
+
+                acquired_coin_t3 = acquired_coin_t2 * swap_3_rate
+                calculated = 1
+
+             # Forward: check if a_quote (acquired coin) matches c_quote
+            elif a_quote == c_quote and calculated == 0:
+                swap_2_rate = c_token0_price
+                acquired_coin_t2 = acquired_coin_t1 * swap_2_rate
+                pool_direction_trade_2 = "quote_to_base"
+                pool_contract_2 = c_contract
+
+                # Forward: check if c_base (acquired coin) matches b_base
+                if c_base == b_base:
+                    swap_3 == b_base
+                    swap_3_rate = b_token1_price
+                    pool_direction_trade_3 = "base_to_quote"
+                    pool_contract_3 = b_contract
+
+                # Forward: check if c_base (acquired coin) matches b_quote
+                elif c_base == b_quote:
+                    swap_3 == b_quote
+                    swap_3_rate = c_token0_price
+                    pool_direction_trade_3 = "quote_to_base"
+                    pool_contract_3 = b_contract
+
+                acquired_coin_t3 = acquired_coin_t2 * swap_3_rate
+                calculated = 1
+
+             # Forward: check if a_quote (acquired coin) matches c_base
+            elif a_quote == c_base and calculated == 0:
+                swap_2_rate = c_token1_price
+                acquired_coin_t2 = acquired_coin_t1 * swap_2_rate
+                pool_direction_trade_2 = "base_to_quote"
+                pool_contract_2 = c_contract
+
+                # Forward: check if c_quote (acquired coin) matches b_base
+                if c_quote == b_base:
+                    swap_3 == b_base
+                    swap_3_rate = b_token1_price
+                    pool_direction_trade_3 = "base_to_quote"
+                    pool_contract_3 = b_contract
+
+                # Forward: check if c_quote (acquired coin) matches b_quote
+                elif c_quote == b_quote:
+                    swap_3 == b_quote
+                    swap_3_rate = b_token0_price
+                    pool_direction_trade_3 = "quote_to_base"
+                    pool_contract_3 = b_contract
+
+                acquired_coin_t3 = acquired_coin_t2 * swap_3_rate
+                calculated = 1
+
+        if direction == "reverse":
+            # Reverse: check if a_base (acquired coin) matches b_quote
+            if a_base == b_quote and calculated == 0:
+                swap_2_rate = b_token0_price
+                acquired_coin_t2 = acquired_coin_t1 * swap_2_rate
+                pool_direction_trade_2 = "quote_to_base"
+                pool_contract_2 = b_contract
+
+                # Reverse: check if b_base (acquired coin) matches c_base
+                if b_base == c_base:
+                    swap_3 == c_base
+                    swap_3_rate = c_token1_price
+                    pool_direction_trade_3 = "base_to_quote"
+                    pool_contract_3 = c_contract
+
+                # Reverse: check if b_base (acquired coin) matches c_quote
+                elif b_base == c_quote:
+                    swap_3 == c_quote
+                    swap_3_rate = c_token0_price
+                    pool_direction_trade_3 = "quote_to_base"
+                    pool_contract_3 = c_contract
+
+                acquired_coin_t3 = acquired_coin_t2 * swap_3_rate
+                calculated = 1
+
+            # Reverse: check if a_base (acquired coin) matches b_base
+            elif a_base == b_base and calculated == 0:
+                swap_2_rate = b_token1_price
+                acquired_coin_t2 = acquired_coin_t1 * swap_2_rate
+                pool_direction_trade_2 = "base_to_quote"
+                pool_contract_2 = b_contract
+
+                # Reverse: check if b_base (acquired coin) matches c_base
+                if b_quote == c_base:
+                    swap_3 == c_base
+                    swap_3_rate = c_token1_price
+                    pool_direction_trade_3 = "base_to_quote"
+                    pool_contract_3 = c_contract
+
+                # Reverse: check if b_base (acquired coin) matches c_quote
+                elif b_quote == c_quote:
+                    swap_3 == c_quote
+                    swap_3_rate = c_token0_price
+                    pool_direction_trade_3 = "quote_to_base"
+                    pool_contract_3 = c_contract
+
+                acquired_coin_t3 = acquired_coin_t2 * swap_3_rate
+                calculated = 1
+
+             # Reverse: check if a_quote (acquired coin) matches b_quote
+            elif a_base == c_quote and calculated == 0:
+                swap_2_rate = c_token0_price
+                acquired_coin_t2 = acquired_coin_t1 * swap_2_rate
+                pool_direction_trade_2 = "quote_to_base"
+                pool_contract_2 = c_contract
+
+                # Forward: check if b_base (acquired coin) matches b_base
+                if c_base == b_base:
+                    swap_3 == b_base
+                    swap_3_rate = b_token1_price
+                    pool_direction_trade_3 = "base_to_quote"
+                    pool_contract_3 = b_contract
+
+                # Forward: check if b_base (acquired coin) matches b_quote
+                elif c_base == b_quote:
+                    swap_3 == b_quote
+                    swap_3_rate = b_token0_price
+                    pool_direction_trade_3 = "quote_to_base"
+                    pool_contract_3 = b_contract
+
+                acquired_coin_t3 = acquired_coin_t2 * swap_3_rate
+                calculated = 1
+
+             # Forward: check if a_quote (acquired coin) matches c_base
+            elif a_base == c_base and calculated == 0:
+                swap_2_rate = c_token1_price
+                acquired_coin_t2 = acquired_coin_t1 * swap_2_rate
+                pool_direction_trade_2 = "base_to_quote"
+                pool_contract_2 = c_contract
+
+                # Forward: check if b_base (acquired coin) matches c_base
+                if c_quote == b_base:
+                    swap_3 == b_base
+                    swap_3_rate = b_token1_price
+                    pool_direction_trade_3 = "base_to_quote"
+                    pool_contract_3 = b_contract
+
+                # Forward: check if b_base (acquired coin) matches c_quote
+                elif c_quote == b_quote:
+                    swap_3 == b_quote
+                    swap_3_rate = b_token0_price
+                    pool_direction_trade_3 = "quote_to_base"
+                    pool_contract_3 = b_contract
+
+                acquired_coin_t3 = acquired_coin_t2 * swap_3_rate
+                calculated = 1
+
+        # Caculate arbitrage results
+        profit_loss = acquired_coin_t3 - starting_amount
+        profit_loss_perc = (profit_loss / starting_amount) * \
+            100 if profit_loss != 0 else 0
+
+        # Format description
+        trade_description_1 = f"Start with {swap_1} of {starting_amount}. Swap at {swap_1_rate} for {swap_2} acquiring {acquired_coin_t1}."
+        trade_description_2 = f"Swap {acquired_coin_t1} of {swap_2} at {swap_2_rate} for {swap_3} acquiring {acquired_coin_t2}."
+        trade_description_3 = f"Swap {acquired_coin_t2} of {swap_3} at {swap_3_rate} for {swap_1} acquiring {acquired_coin_t3}."
+
+        if profit_loss_perc >= min_surface_rate:
+            return {
+                "swap1": swap_1,
+                "swap2": swap_2,
+                "swap3": swap_3,
+                "poolContract1": pool_contract_1,
+                "poolContract2": pool_contract_2,
+                "poolContract3": pool_contract_3,
+                "poolDirectionTrade1": pool_direction_trade_1,
+                "poolDirectionTrade2": pool_direction_trade_2,
+                "poolDirectionTrade3": pool_direction_trade_3,
+                "startingAmount": starting_amount,
+                "acquiredCoinT1": acquired_coin_t1,
+                "acquiredCoinT2": acquired_coin_t2,
+                "acquiredCoinT3": acquired_coin_t3,
+                "swap1Rate": swap_1_rate,
+                "swap2Rate": swap_2_rate,
+                "swap3Rate": swap_3_rate,
+                "profitLoss": profit_loss,
+                "profitLossPerc": profit_loss_perc,
+                "direction": direction,
+                "tradeDesc1": trade_description_1,
+                "tradeDesc2": trade_description_2,
+                "tradeDesc3": trade_description_3
+            }
+
+    return {}

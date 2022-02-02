@@ -31,4 +31,6 @@ if __name__ == "__main__":
 
     for t_pair in structured_pairs:
         surface_rate = func_triangular_arb.calc_triangular_arbs_surface_rate(
-            t_pair)
+            t_pair, min_rate=0)
+
+        print(surface_rate)
