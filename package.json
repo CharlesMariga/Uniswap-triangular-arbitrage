@@ -1,0 +1,27 @@
+{
+  "name": "uniswap-triangular-arbitrage",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/CharlesMariga/Uniswap-triangular-arbitrage.git"
+  },
+  "author": "Charles Mariga",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/CharlesMariga/Uniswap-triangular-arbitrage/issues"
+  },
+  "homepage": "https://github.com/CharlesMariga/Uniswap-triangular-arbitrage#readme",
+  "dependencies": {
+    "ethers": "^5.5.4",
+    "web3": "^1.2.6"
+  },
+  "devDependencies": {
+    "@uniswap/sdk-core": "^3.0.1",
+    "@uniswap/v3-sdk": "^3.3.2"
+  }
+}
