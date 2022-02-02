@@ -1,5 +1,5 @@
 # https://thegraph.com/hosted-service/subgraph/uniswap/uniswap-v3
-
+import time
 import requests
 import json
 import func_triangular_arb
@@ -15,6 +15,7 @@ def retrieve_uniswap_information():
                 id
                 token0Price
                 token1Price
+                feeTier
                 token0 {id symbol name decimals}
                 token1 {id symbol name decimals}
             }
@@ -26,11 +27,22 @@ def retrieve_uniswap_information():
 
 
 if __name__ == "__main__":
-    pairs = retrieve_uniswap_information()["data"]["pools"]
-    structured_pairs = func_triangular_arb.structure_trading_pairs(pairs)
+    while True:
+        pairs = retrieve_uniswap_information()["data"]["pools"]
+        structured_pairs = func_triangular_arb.structure_trading_pairs(
+            pairs, limit=500)
 
-    for t_pair in structured_pairs:
-        surface_rate = func_triangular_arb.calc_triangular_arbs_surface_rate(
-            t_pair, min_rate=0)
+        surface_rates_list = []
+        for t_pair in structured_pairs:
+            surface_rate = func_triangular_arb.calc_triangular_arbs_surface_rate(
+                t_pair, min_rate=1.5)
 
-        print(surface_rate)
+            if len(surface_rate) > 0:
+                surface_rates_list.append(surface_rate)
+
+        # Save to json file
+        with open("uniswap_surface_rates.json", "w") as fp:
+            json.dump(surface_rates_list, fp)
+            print("File saved.")
+
+        time.sleep(60)

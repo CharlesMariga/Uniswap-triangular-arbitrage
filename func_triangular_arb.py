@@ -1,12 +1,12 @@
 # Structure trading pair groups
-def structure_trading_pairs(pairs, limit=200):
+def structure_trading_pairs(pairs, limit):
     remove_duplicate_list = []
     triangular_pairs_list = []
     pairs_list = pairs[:limit]
 
     # Loop through each coin to find potential matches
     for pair_a in pairs_list:
-        # Get first pair (A)
+        # Get first pair (Pair A)
         a_base = pair_a["token0"]["symbol"]
         a_quote = pair_a["token1"]["symbol"]
         a_pair = a_base + "_" + a_quote
@@ -18,9 +18,10 @@ def structure_trading_pairs(pairs, limit=200):
         a_token0_price = pair_a["token0Price"]
         a_token1_price = pair_a["token1Price"]
 
+        # Put (A) in a box for checking (B)
         a_pair_box = [a_base, a_quote]
 
-        # Get first pair (B)
+        # Get second pair (Pair B)
         for pair_b in pairs_list:
             b_base = pair_b["token0"]["symbol"]
             b_quote = pair_b["token1"]["symbol"]
@@ -33,9 +34,9 @@ def structure_trading_pairs(pairs, limit=200):
             b_token0_price = pair_b["token0Price"]
             b_token1_price = pair_b["token1Price"]
 
-            # Get first pair (C)
-            if b_base in a_pair_box or b_quote in a_pair_box:
-                if a_pair != b_pair:
+            # Get first pair (Pair C)
+            if a_pair != b_pair:
+                if b_base in a_pair_box or b_quote in a_pair_box:
                     for pair_c in pairs_list:
                         c_base = pair_c["token0"]["symbol"]
                         c_quote = pair_c["token1"]["symbol"]
@@ -54,10 +55,12 @@ def structure_trading_pairs(pairs, limit=200):
                                         b_quote, c_base, c_quote]
 
                             counts_c_base = 0
-                            counts_c_quote = 0
                             for i in pair_box:
                                 if i == c_base:
                                     counts_c_base += 1
+
+                            counts_c_quote = 0
+                            for i in pair_box:
                                 if i == c_quote:
                                     counts_c_quote += 1
 
@@ -70,7 +73,7 @@ def structure_trading_pairs(pairs, limit=200):
                                         'a_pair': a_pair,
                                         'a_base': a_base,
                                         'a_quote': a_quote,
-                                        'b_pair': a_pair,
+                                        'b_pair': b_pair,
                                         'b_base': b_base,
                                         'b_quote': b_quote,
                                         'c_pair': c_pair,
@@ -124,7 +127,7 @@ def calc_triangular_arbs_surface_rate(t_pair, min_rate):
         a_base = t_pair["a_base"]
         a_quote = t_pair["a_quote"]
         b_base = t_pair["b_base"]
-        b_quote = t_pair["c_quote"]
+        b_quote = t_pair["b_quote"]
         c_base = t_pair["c_base"]
         c_quote = t_pair["c_quote"]
 
@@ -147,9 +150,9 @@ def calc_triangular_arbs_surface_rate(t_pair, min_rate):
         acquired_coin_t3 = 0
         calculated = 0
 
-        swap_1 = 0
-        swap_2 = 0
-        swap_3 = 0
+        swap_1 = ""
+        swap_2 = ""
+        swap_3 = ""
         swap_1_rate = 0
         swap_2_rate = 0
         swap_3_rate = 0
@@ -182,14 +185,14 @@ def calc_triangular_arbs_surface_rate(t_pair, min_rate):
 
                 # Forward: check if b_base (acquired coin) matches c_base
                 if b_base == c_base:
-                    swap_3 == c_base
+                    swap_3 = c_base
                     swap_3_rate = c_token1_price
                     pool_direction_trade_3 = "base_to_quote"
                     pool_contract_3 = c_contract
 
                 # Forward: check if b_base (acquired coin) matches c_quote
                 elif b_base == c_quote:
-                    swap_3 == c_quote
+                    swap_3 = c_quote
                     swap_3_rate = c_token0_price
                     pool_direction_trade_3 = "quote_to_base"
                     pool_contract_3 = c_contract
@@ -206,14 +209,14 @@ def calc_triangular_arbs_surface_rate(t_pair, min_rate):
 
                 # Forward: check if b_base (acquired coin) matches c_base
                 if b_quote == c_base:
-                    swap_3 == c_base
+                    swap_3 = c_base
                     swap_3_rate = c_token1_price
                     pool_direction_trade_3 = "base_to_quote"
                     pool_contract_3 = c_contract
 
                 # Forward: check if b_base (acquired coin) matches c_quote
                 elif b_quote == c_quote:
-                    swap_3 == c_quote
+                    swap_3 = c_quote
                     swap_3_rate = c_token0_price
                     pool_direction_trade_3 = "quote_to_base"
                     pool_contract_3 = c_contract
@@ -230,15 +233,15 @@ def calc_triangular_arbs_surface_rate(t_pair, min_rate):
 
                 # Forward: check if c_base (acquired coin) matches b_base
                 if c_base == b_base:
-                    swap_3 == b_base
+                    swap_3 = b_base
                     swap_3_rate = b_token1_price
                     pool_direction_trade_3 = "base_to_quote"
                     pool_contract_3 = b_contract
 
                 # Forward: check if c_base (acquired coin) matches b_quote
                 elif c_base == b_quote:
-                    swap_3 == b_quote
-                    swap_3_rate = c_token0_price
+                    swap_3 = b_quote
+                    swap_3_rate = b_token0_price
                     pool_direction_trade_3 = "quote_to_base"
                     pool_contract_3 = b_contract
 
@@ -254,14 +257,14 @@ def calc_triangular_arbs_surface_rate(t_pair, min_rate):
 
                 # Forward: check if c_quote (acquired coin) matches b_base
                 if c_quote == b_base:
-                    swap_3 == b_base
+                    swap_3 = b_base
                     swap_3_rate = b_token1_price
                     pool_direction_trade_3 = "base_to_quote"
                     pool_contract_3 = b_contract
 
                 # Forward: check if c_quote (acquired coin) matches b_quote
                 elif c_quote == b_quote:
-                    swap_3 == b_quote
+                    swap_3 = b_quote
                     swap_3_rate = b_token0_price
                     pool_direction_trade_3 = "quote_to_base"
                     pool_contract_3 = b_contract
@@ -279,14 +282,14 @@ def calc_triangular_arbs_surface_rate(t_pair, min_rate):
 
                 # Reverse: check if b_base (acquired coin) matches c_base
                 if b_base == c_base:
-                    swap_3 == c_base
+                    swap_3 = c_base
                     swap_3_rate = c_token1_price
                     pool_direction_trade_3 = "base_to_quote"
                     pool_contract_3 = c_contract
 
                 # Reverse: check if b_base (acquired coin) matches c_quote
                 elif b_base == c_quote:
-                    swap_3 == c_quote
+                    swap_3 = c_quote
                     swap_3_rate = c_token0_price
                     pool_direction_trade_3 = "quote_to_base"
                     pool_contract_3 = c_contract
@@ -303,14 +306,14 @@ def calc_triangular_arbs_surface_rate(t_pair, min_rate):
 
                 # Reverse: check if b_base (acquired coin) matches c_base
                 if b_quote == c_base:
-                    swap_3 == c_base
+                    swap_3 = c_base
                     swap_3_rate = c_token1_price
                     pool_direction_trade_3 = "base_to_quote"
                     pool_contract_3 = c_contract
 
                 # Reverse: check if b_base (acquired coin) matches c_quote
                 elif b_quote == c_quote:
-                    swap_3 == c_quote
+                    swap_3 = c_quote
                     swap_3_rate = c_token0_price
                     pool_direction_trade_3 = "quote_to_base"
                     pool_contract_3 = c_contract
@@ -327,14 +330,14 @@ def calc_triangular_arbs_surface_rate(t_pair, min_rate):
 
                 # Forward: check if b_base (acquired coin) matches b_base
                 if c_base == b_base:
-                    swap_3 == b_base
+                    swap_3 = b_base
                     swap_3_rate = b_token1_price
                     pool_direction_trade_3 = "base_to_quote"
                     pool_contract_3 = b_contract
 
                 # Forward: check if b_base (acquired coin) matches b_quote
                 elif c_base == b_quote:
-                    swap_3 == b_quote
+                    swap_3 = b_quote
                     swap_3_rate = b_token0_price
                     pool_direction_trade_3 = "quote_to_base"
                     pool_contract_3 = b_contract
@@ -351,14 +354,14 @@ def calc_triangular_arbs_surface_rate(t_pair, min_rate):
 
                 # Forward: check if b_base (acquired coin) matches c_base
                 if c_quote == b_base:
-                    swap_3 == b_base
+                    swap_3 = b_base
                     swap_3_rate = b_token1_price
                     pool_direction_trade_3 = "base_to_quote"
                     pool_contract_3 = b_contract
 
                 # Forward: check if b_base (acquired coin) matches c_quote
                 elif c_quote == b_quote:
-                    swap_3 == b_quote
+                    swap_3 = b_quote
                     swap_3_rate = b_token0_price
                     pool_direction_trade_3 = "quote_to_base"
                     pool_contract_3 = b_contract
