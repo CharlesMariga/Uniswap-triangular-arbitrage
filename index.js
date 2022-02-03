@@ -15,6 +15,7 @@ function getFile(path) {
 
 // Get price
 async function getPrice(factory, amountIn, tradeDirection) {
+  let amount = amountIn;
   const provider = new ethers.providers.JsonRpcProvider(
     "https://mainnet.infura.io/v3/852308af2e4a4433b6a09bcd57d46392"
   );
@@ -53,10 +54,36 @@ async function getPrice(factory, amountIn, tradeDirection) {
       tokenSymbol,
       tokenName,
       tokenDecimals,
+      tokenAddress,
     };
     tokenInfoArray.push(obj);
   }
-  console.log("TokenInfoArr: ", tokenInfoArray);
+
+  //   Identify the correct token to input as A or B repectively
+  let inputTokenA = "";
+  let inputDecimalsA = 0;
+  let inputTokenB = "";
+  let inputDecimalsB = 0;
+
+  if (tradeDirection === "base_to_quote") {
+    inputTokenA = tokenInfoArray[0].tokenAddress;
+    inputDecimalsA = tokenInfoArray[0].tokenDecimals;
+
+    inputTokenB = tokenInfoArray[1].tokenAddress;
+    inputDecimalsB = tokenInfoArray[1].tokenDecimals;
+  } else {
+    inputTokenA = tokenInfoArray[1].tokenAddress;
+    inputDecimalsA = tokenInfoArray[1].tokenDecimals;
+
+    inputTokenB = tokenInfoArray[0].tokenAddress;
+    inputDecimalsB = tokenInfoArray[0].tokenDecimals;
+  }
+
+  //  Reformat amount in
+  if (!isNaN(amount)) amount = amount.toString();
+  amount = ethers.utils.parseUnits(amount, inputDecimalsA).toString();
+
+  //  Get uniswap v3 quote
 }
 
 // Get depth
