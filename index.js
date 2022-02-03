@@ -27,11 +27,36 @@ async function getPrice(factory, amountIn, tradeDirection) {
 
   const poolContract = new ethers.Contract(factory, abi, provider);
 
+  //   Get pool token information
   const token0Address = await poolContract.token0();
   const token1Address = await poolContract.token1();
   const tokenFee = await poolContract.fee();
 
-  console.log(token0Address, token1Address, tokenFee);
+  //   Get individual token information (Symbol, name, decimals)
+  const addressArray = [token0Address, token1Address];
+
+  let tokenInfoArray = [];
+  for (let i = 0; i < addressArray.length; i++) {
+    const tokenAddress = addressArray[i];
+    const tokenABI = [
+      "function name() view returns (string)",
+      "function symbol() view returns (string)",
+      "function decimals() view returns (uint)",
+    ];
+    const contract = new ethers.Contract(tokenAddress, tokenABI, provider);
+    const tokenSymbol = await contract.symbol();
+    const tokenName = await contract.name();
+    const tokenDecimals = await contract.decimals();
+
+    const obj = {
+      id: "token" + i,
+      tokenSymbol,
+      tokenName,
+      tokenDecimals,
+    };
+    tokenInfoArray.push(obj);
+  }
+  console.log("TokenInfoArr: ", tokenInfoArray);
 }
 
 // Get depth
