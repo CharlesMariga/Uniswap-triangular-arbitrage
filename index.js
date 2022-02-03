@@ -1,7 +1,9 @@
 const fs = require("fs");
 
 const { ethers } = require("ethers");
-const QuoterABI = require("@uniswap/v3-periphery/artifacts/contracts/lens/Quoter.sol/Quoter.json");
+const {
+  abi: QuoterABI,
+} = require("@uniswap/v3-periphery/artifacts/contracts/lens/Quoter.sol/Quoter.json");
 
 // Read file
 function getFile(path) {
@@ -9,7 +11,20 @@ function getFile(path) {
     const data = fs.readFileSync(path, "utf-8");
     return data;
   } catch (err) {
-    return [];
+    console.log(err.message);
+  }
+}
+
+// Calculate arbitrage
+function calculateArbitrage(amountIn, amountOut, surfaceObj) {
+  // Calculate profit or loss
+  const profitLoss = amountOut - amountIn;
+
+  if (profitLoss > 0) {
+    const profitLossPerc = (profitLoss / amountIn) * 100;
+    const result = { ...surfaceObj, profitLossPerc, profitLoss };
+    const { swap1, swap2, swap3 } = result;
+    console.table([{ swap1, swap2, swap3, profitLoss, profitLossPerc }]);
   }
 }
 
@@ -45,9 +60,18 @@ async function getPrice(factory, amountIn, tradeDirection) {
       "function decimals() view returns (uint)",
     ];
     const contract = new ethers.Contract(tokenAddress, tokenABI, provider);
-    const tokenSymbol = await contract.symbol();
-    const tokenName = await contract.name();
-    const tokenDecimals = await contract.decimals();
+
+    let tokenSymbol = "";
+    let tokenName = "";
+    let tokenDecimals = 0;
+
+    try {
+      tokenSymbol = await contract.symbol();
+      tokenName = await contract.name();
+      tokenDecimals = await contract.decimals();
+    } catch (err) {
+      console.log("");
+    }
 
     const obj = {
       id: "token" + i,
@@ -83,31 +107,56 @@ async function getPrice(factory, amountIn, tradeDirection) {
   if (!isNaN(amount)) amount = amount.toString();
   amount = ethers.utils.parseUnits(amount, inputDecimalsA).toString();
 
-  //  Get uniswap v3 quote
+  //   Get uniswap v3 quote
+  const quoaterAddress = "0xb27308f9F90D607463bb33eA1BeBb41C27CE5AB6";
+  const quoaterContract = new ethers.Contract(
+    quoaterAddress,
+    QuoterABI,
+    provider
+  );
+
+  let quotedAmountedOut = 0;
+  try {
+    quotedAmountedOut = await quoaterContract.callStatic.quoteExactInputSingle(
+      inputTokenA,
+      inputTokenB,
+      tokenFee,
+      amount,
+      0
+    );
+  } catch {
+    console.log("");
+  }
+
+  //    Format output
+  let outputAmount = ethers.utils
+    .formatUnits(quotedAmountedOut, inputDecimalsB)
+    .toString();
+
+  return outputAmount;
 }
 
 // Get depth
-async function getDetph(amountIn, limit = 1) {
+async function getDepth(amountIn) {
   // GEt JSON surface rates
   console.log("Reading surface rate information...");
-
-  const fileInfo = JSON.parse(getFile("uniswap_surface_rates.json")).slice(
-    0,
-    limit
-  );
+  let fileInfo = JSON.parse(getFile("uniswap_surface_rates.json"));
+  let limit = 20;
+  limit = fileInfo.length < limit ? fileInfo.length : limit;
+  fileInfo = fileInfo.slice(0, limit);
 
   //   Loop through each trade and get price information
-  fileInfo.forEach(async (el, index) => {
+  for (let i = 0; i < fileInfo.length; i++) {
     //   Extract the variables
-    const pair1ContractAddress = el.poolContract1;
-    const pair2ContractAddress = el.poolContract2;
-    const pair3ContractAddress = el.poolContract3;
-    const trade1Direction = el.poolDirectionTrade1;
-    const trade2Direction = el.poolDirectionTrade2;
-    const trade3Direction = el.poolDirectionTrade3;
+    const pair1ContractAddress = fileInfo[i].poolContract1;
+    const pair2ContractAddress = fileInfo[i].poolContract2;
+    const pair3ContractAddress = fileInfo[i].poolContract3;
+    const trade1Direction = fileInfo[i].poolDirectionTrade1;
+    const trade2Direction = fileInfo[i].poolDirectionTrade2;
+    const trade3Direction = fileInfo[i].poolDirectionTrade3;
 
     // Trade 1
-    console.log("Checking trade 1 acquired coin...");
+    // console.log("Checking trade 1 acquired coin...");
     const acquiredCoinT1 = await getPrice(
       pair1ContractAddress,
       amountIn,
@@ -115,13 +164,26 @@ async function getDetph(amountIn, limit = 1) {
     );
 
     // Trade 2
-    console.log("Checking trade 2 acquired coin...");
+    if (acquiredCoinT1 === 0) return;
+    // console.log("Checking trade 2 acquired coin...");
+    const acquiredCoinT2 = await getPrice(
+      pair2ContractAddress,
+      acquiredCoinT1,
+      trade2Direction
+    );
 
     // Trade 3
-    console.log("Checking trade 3 acquired coin...");
-  });
+    if (acquiredCoinT2 === 0) return;
+    // console.log("Checking trade 3 acquired coin...");
+    const acquiredCoinT3 = await getPrice(
+      pair3ContractAddress,
+      acquiredCoinT2,
+      trade3Direction
+    );
 
-  return;
+    // Calculate and show arbitrage
+    calculateArbitrage(amountIn, acquiredCoinT3, fileInfo[i]);
+  }
 }
 
-getDetph(1);
+getDepth(10);
